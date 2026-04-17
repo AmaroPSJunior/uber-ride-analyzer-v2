@@ -43,11 +43,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(buildUI())
         val filter = IntentFilter("DEBUG_LOG")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(debugReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            registerReceiver(debugReceiver, filter)
-        }
+        // No permission needed for internal app communication, simplifies everything
+        registerReceiver(debugReceiver, filter)
     }
 
     override fun onDestroy() {
@@ -86,7 +83,14 @@ class MainActivity : AppCompatActivity() {
         val scrollView = ScrollView(this).apply { setBackgroundColor(Color.parseColor("#121212")); isFillViewport = true }
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(40), dp(20), dp(20)); gravity = Gravity.CENTER_HORIZONTAL }
 
-        root.addView(TextView(this).apply { text = "Uber Analyzer 1.1.1"; setTextColor(Color.WHITE); textSize = 22f; typeface = Typeface.DEFAULT_BOLD })
+        root.addView(TextView(this).apply { text = "Uber Analyzer 1.0"; setTextColor(Color.WHITE); textSize = 22f; typeface = Typeface.DEFAULT_BOLD })
+        
+        // Battery Warning
+        root.addView(TextView(this).apply { 
+            text = "⚠️ IMPORTANTE: Desative o 'Modo de Economia de Energia' para o app funcionar sempre!"; 
+            setTextColor(Color.YELLOW); textSize = 14f; setGravity(Gravity.CENTER)
+            setPadding(0, dp(10), 0, dp(10))
+        })
 
         accStatusView = buildStatusView(dp)
         root.addView(accStatusView)

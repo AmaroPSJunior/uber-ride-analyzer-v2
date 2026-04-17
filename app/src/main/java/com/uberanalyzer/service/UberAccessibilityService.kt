@@ -12,46 +12,50 @@ import com.uberanalyzer.parser.RideParser
 class UberAccessibilityService : AccessibilityService() {
     
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        // Log basic event for heartbeat helping identifying if reader is alive
+        // Heartbeat to UI every 3 seconds
         if (System.currentTimeMillis() - lastLogTime > 3000) {
             lastLogTime = System.currentTimeMillis()
-            val heartbeat = Intent("DEBUG_LOG")
-            heartbeat.putExtra("log_text", "Monitorando Uber... (Event: ${AccessibilityEvent.eventTypeToString(event.eventType)})")
-            sendBroadcast(heartbeat)
+            sendDebugLog("Monitorando... [${AccessibilityEvent.eventTypeToString(event.eventType)}]")
         }
 
-        val source = event.source ?: return
+        // Use rootInActiveWindow to get the full screen
+        val rootNode = rootInActiveWindow ?: return
         
-        // Find the "Aceitar" or "Selecionar" button which strictly identifies the request card
-        val actionButton = findActionNode(source)
-        
-        if (actionButton != null) {
-            val cardNode = findCardContainer(actionButton)
-            val cardText = mutableListOf<String>()
-            collectAllText(cardNode, cardText)
-            
-            val fullText = cardText.joinToString(" | ")
-            
-            // Log what we found inside the card for debug
-            val dbgIntent = Intent("DEBUG_LOG")
-            dbgIntent.putExtra("log_text", "Card Detectado: ${if(fullText.length > 60) fullText.take(60) + "..." else fullText}")
-            sendBroadcast(dbgIntent)
+        // Scan the entire screen text
+        val allText = mutableListOf<String>()
+        collectAllText(rootNode, allText)
+        val fullText = allText.joinToString(" | ")
 
-            // Check if it's a ride request
-            val lowerText = fullText.lowercase()
-            if (lowerText.contains("r$") && (lowerText.contains("km") || lowerText.contains("distância"))) {
-                processRide(fullText)
+        // Detection logic: Must have "R$" AND "Aceitar/Selecionar"
+        val lowerText = fullText.lowercase()
+        val hasPrice = lowerText.contains("r$")
+        val hasAccept = lowerText.contains("aceitar") || lowerText.contains("selecionar") || lowerText.contains("confirmar")
+
+        if (hasPrice && hasAccept) {
+            // Find the specific card node for accurate parsing
+            val actionButton = findActionNode(rootNode)
+            val textToParse = if (actionButton != null) {
+                val cardNode = findCardParent(actionButton)
+                val cardStrings = mutableListOf<String>()
+                collectAllText(cardNode, cardStrings)
+                cardStrings.joinToString(" | ")
+            } else {
+                fullText
+            }
+
+            // Verify if the text looks like a valid ride again
+            if (textToParse.contains("R$") && (textToParse.lowercase().contains("km") || textToParse.lowercase().contains("distância"))) {
+                processRide(textToParse)
             }
         }
     }
 
     private fun findActionNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
         if (node == null) return null
-        val text = node.text?.toString()?.lowercase() ?: ""
-        val contentDesc = node.contentDescription?.toString()?.lowercase() ?: ""
+        val text = (node.text ?: "").toString().lowercase()
+        val desc = (node.contentDescription ?: "").toString().lowercase()
         
-        if (text.contains("aceitar") || text.contains("selecionar") || 
-            contentDesc.contains("aceitar") || contentDesc.contains("selecionar")) {
+        if (text.contains("aceitar") || text.contains("selecionar") || desc.contains("aceitar") || desc.contains("selecionar")) {
             return node
         }
         
@@ -62,30 +66,33 @@ class UberAccessibilityService : AccessibilityService() {
         return null
     }
 
-    private fun findCardContainer(node: AccessibilityNodeInfo): AccessibilityNodeInfo {
+    private fun findCardParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo {
         var current = node
-        // Traverse up to find a container that likely holds the whole card
-        for (i in 0 until 6) {
+        // Traverse up to find a container (usually the card is 5-7 levels up)
+        for (i in 0 until 7) {
             current.parent?.let { current = it } ?: break
         }
         return current
     }
 
-    private fun processRide(fullText: String) {
-        RideParser.parse(fullText)?.let { rideData ->
-            if (System.currentTimeMillis() - lastProcessedTime > 4000) {
-                lastProcessedTime = System.currentTimeMillis()
-                val analysis = RideAnalyzer.analyze(rideData)
-                val intentOver = Intent(this, OverlayService::class.java).apply {
-                    putExtra(OverlayService.EXTRA_PRICE, rideData.price)
-                    putExtra(OverlayService.EXTRA_DISTANCE, rideData.distanceKm)
-                    putExtra(OverlayService.EXTRA_TIME, rideData.timeMin)
-                    putExtra(OverlayService.EXTRA_CATEGORY, rideData.category.displayName)
-                    putExtra(OverlayService.EXTRA_SCORE, analysis.score)
-                    putExtra(OverlayService.EXTRA_RATING, analysis.rating.name)
-                }
-                startService(intentOver)
+    private fun processRide(text: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastProcessedTime < 4000) return // Avoid spamming services
+        
+        RideParser.parse(text)?.let { rideData ->
+            lastProcessedTime = now
+            sendDebugLog("SOLICITAÇÃO: R$ ${rideData.price} | ${rideData.distanceKm} KM")
+            
+            val analysis = RideAnalyzer.analyze(rideData)
+            val intent = Intent(this, OverlayService::class.java).apply {
+                putExtra(OverlayService.EXTRA_PRICE, rideData.price)
+                putExtra(OverlayService.EXTRA_DISTANCE, rideData.distanceKm)
+                putExtra(OverlayService.EXTRA_TIME, rideData.timeMin)
+                putExtra(OverlayService.EXTRA_CATEGORY, rideData.category.displayName)
+                putExtra(OverlayService.EXTRA_SCORE, analysis.score)
+                putExtra(OverlayService.EXTRA_RATING, analysis.rating.name)
             }
+            startService(intent)
         }
     }
 
@@ -98,13 +105,18 @@ class UberAccessibilityService : AccessibilityService() {
         }
     }
 
+    private fun sendDebugLog(text: String) {
+        val intent = Intent("DEBUG_LOG")
+        intent.putExtra("log_text", text)
+        intent.setPackage(packageName) // Restrict broadcast to the app for more reliability
+        sendBroadcast(intent)
+    }
+
     override fun onInterrupt() {}
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        val intent = Intent("DEBUG_LOG")
-        intent.putExtra("log_text", "Aguardando solicitação da Uber...")
-        sendBroadcast(intent)
+        sendDebugLog("Leitor pronto para detectar Uber!")
     }
 
     companion object {
