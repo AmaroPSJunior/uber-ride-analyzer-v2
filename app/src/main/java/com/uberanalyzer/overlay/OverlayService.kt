@@ -61,11 +61,11 @@ class OverlayService : Service() {
         val pr = i.getDoubleExtra(EXTRA_PRICE, 0.0); val km = i.getDoubleExtra(EXTRA_DISTANCE, 0.1)
         view = LinearLayout(this).apply {
             orientation = 1; setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = GradientDrawable().apply { setColor(Color.parseColor("#F2121212")); cornerRadius = dp(16).toFloat(); setStroke(dp(3), Color.parseColor(r.colorHex)) }
-            addView(TextView(context).apply { text = "Nota: " + i.getDoubleExtra(EXTRA_SCORE, 0.0) + " | " + i.getStringExtra(EXTRA_CATEGORY); setTextColor(-1); textSize = 18f })
+            background = GradientDrawable().apply { setColor(Color.parseColor("#F20D47A1")); cornerRadius = dp(16).toFloat(); setStroke(dp(3), Color.parseColor(r.colorHex)) }
+            addView(TextView(context).apply { text = "Nota: " + i.getDoubleExtra(EXTRA_SCORE, 0.0) + " | " + i.getStringExtra(EXTRA_CATEGORY); setTextColor(-1) })
             val pkm = if (km > 0) pr/km else 0.0
-            addView(TextView(context).apply { text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm); setTextColor(Color.parseColor(r.colorHex)); textSize = 26f; setTypeface(null, 1) })
-            addView(TextView(context).apply { text = String.format("Total: R$ %.2f | %.1f KM", pr, km); setTextColor(-3355444); textSize = 16f } )
+            addView(TextView(context).apply { text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm); setTextColor(Color.parseColor(r.colorHex)); textSize = 20f })
+            addView(TextView(context).apply { text = String.format("Total: R$ %.2f | %.1f KM", pr, km); setTextColor(-3355444) } )
         }
         view?.setOnTouchListener { _, _ -> hide(); true }
         try { wm?.addView(view, p) } catch (e: Exception) {}
