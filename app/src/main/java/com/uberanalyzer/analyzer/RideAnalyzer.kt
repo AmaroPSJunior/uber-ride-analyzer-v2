@@ -8,7 +8,28 @@ object RideAnalyzer {
 
     fun analyze(ride: RideData): AnalysisResult {
         val pricePerKm = ride.price / ride.distanceKm
-        val score = (pricePerKm * ride.category.weight * (if (ride.timeMin <= 15) 1.2 else 1.0)).coerceIn(0.0, 10.0)
+        val hours = ride.timeMin / 60.0
+        val pricePerHour = if (hours > 0) ride.price / hours else 0.0
+        
+        // Speed check as a proxy for traffic (KM/h)
+        val speed = if (hours > 0) ride.distanceKm / hours else 0.0
+        val trafficFactor = when {
+            speed > 40 -> 1.2  // Fluid traffic
+            speed < 15 -> 0.7  // Heavy traffic/congestion
+            else -> 1.0        // Normal
+        }
+        
+        // Base score on R$/KM (target > 2.0) and R$/Hour (target > 45.0)
+        val kmScore = (pricePerKm / 2.0) * 5.0
+        val hourScore = (pricePerHour / 45.0) * 5.0
+        
+        var score = (kmScore + hourScore).coerceIn(0.0, 10.0)
+        
+        // Apply traffic factor and category weight
+        score *= trafficFactor
+        score *= ride.category.weight
+        score = score.coerceIn(0.0, 10.0)
+
         return AnalysisResult(score, ScoreRating.fromScore(score), pricePerKm)
     }
 }

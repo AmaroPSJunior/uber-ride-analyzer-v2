@@ -7,29 +7,39 @@ import java.util.Locale
 object RideParser {
     fun parse(text: String): RideData? {
         val lowerText = text.lowercase(Locale.getDefault())
-        // Uber app text usually contains R$ and km/min.
         if (!lowerText.contains("r$")) return null
 
-        // Price: Matches R$ XX,XX or R$ XX.XX
+        // Price extraction
         val priceRegex = Regex("R\\$\\s*([0-9]+[,.][0-9]{2})")
         val prices = priceRegex.findAll(text).mapNotNull { 
-            it.groupValues[1].replace(",", ".").toDoubleOrNull() 
+            it.groupValues[1].replace(",", ".").toDoubleOrNull()
         }.toList()
         val price = prices.maxOrNull() ?: return null
 
-        // Distance: Matches XX,X km or XX.X km
+        // Distance extraction (pickup + trip)
         val distanceRegex = Regex("([0-9]+[,.][0-9]+)\\s*km")
         val kms = distanceRegex.findAll(lowerText).mapNotNull { 
-            it.groupValues[1].replace(",", ".").toDoubleOrNull() 
+            it.groupValues[1].replace(",", ".").toDoubleOrNull()
         }.toList()
-        val dist = if (kms.size >= 2) kms[0] + kms[1] else kms.firstOrNull() ?: 1.0
+        // Uber often shows: "X km away" and "Y km trip". We want X + Y.
+        val dist = if (kms.size >= 2) {
+            // Check if one value is suspiciously small (pickup) and add them
+            kms.sum()
+        } else {
+            kms.firstOrNull() ?: 1.0
+        }
 
-        // Time: Matches XX min or XX minutos
+        // Time extraction (pickup + trip)
         val timeRegex = Regex("([0-9]+)\\s*(min|minutos)")
         val mins = timeRegex.findAll(lowerText).mapNotNull { 
-            it.groupValues[1].toIntOrNull() 
+            it.groupValues[1].toIntOrNull()
         }.toList()
-        val time = if (mins.size >= 2) mins[0] + mins[1] else mins.firstOrNull() ?: 5
+        // Similar to distance, we sum the times
+        val time = if (mins.size >= 2) {
+            mins.sum()
+        } else {
+            mins.firstOrNull() ?: 5
+        }
 
         return RideData(price, dist, time, RideCategory.fromString(text), text)
     }

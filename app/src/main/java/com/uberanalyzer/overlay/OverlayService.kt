@@ -56,16 +56,44 @@ class OverlayService : Service() {
     @SuppressLint("ClickableViewAccessibility")
     private fun show(i: Intent, r: ScoreRating) {
         hide()
+        val catName = i.getStringExtra(EXTRA_CATEGORY) ?: "Uber"
+        val cat = com.uberanalyzer.model.RideCategory.fromString(catName)
+        
         val dp = { v: Int -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).toInt() }
-        val p = WindowManager.LayoutParams(dp(300), -2, if (Build.VERSION.SDK_INT >= 26) 2038 else 2002, 8, -3).apply { gravity = Gravity.TOP; y = 150 }
-        val pr = i.getDoubleExtra(EXTRA_PRICE, 0.0); val km = i.getDoubleExtra(EXTRA_DISTANCE, 0.1)
+        val p = WindowManager.LayoutParams(dp(320), -2, if (Build.VERSION.SDK_INT >= 26) 2038 else 2002, 8, -3).apply { gravity = Gravity.TOP; y = 150 }
+        
+        val pr = i.getDoubleExtra(EXTRA_PRICE, 0.0)
+        val km = i.getDoubleExtra(EXTRA_DISTANCE, 0.1)
+        val time = i.getIntExtra(EXTRA_TIME, 0)
+        
         view = LinearLayout(this).apply {
             orientation = 1; setPadding(dp(16), dp(16), dp(16), dp(16))
-            background = GradientDrawable().apply { setColor(Color.parseColor("#F20D47A1")); cornerRadius = dp(16).toFloat(); setStroke(dp(3), Color.parseColor(r.colorHex)) }
-            addView(TextView(context).apply { text = "Nota: " + i.getDoubleExtra(EXTRA_SCORE, 0.0) + " | " + i.getStringExtra(EXTRA_CATEGORY); setTextColor(-1) })
+            background = GradientDrawable().apply { 
+                setColor(Color.parseColor(cat.colorHex))
+                cornerRadius = dp(20).toFloat()
+                setStroke(dp(4), Color.parseColor(r.colorHex)) 
+            }
+            
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "Nota: %.1f | %s", i.getDoubleExtra(EXTRA_SCORE, 0.0), cat.displayName)
+                setTextColor(Color.WHITE); textSize = 18f; setTypeface(null, 1)
+            })
+            
             val pkm = if (km > 0) pr/km else 0.0
-            addView(TextView(context).apply { text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm); setTextColor(Color.parseColor(r.colorHex)); textSize = 20f })
-            addView(TextView(context).apply { text = String.format("Total: R$ %.2f | %.1f KM", pr, km); setTextColor(-3355444) } )
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm)
+                setTextColor(Color.parseColor(r.colorHex)); textSize = 28f; setTypeface(null, 1)
+            })
+            
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "Total: R$ %.2f | %.1f KM", pr, km)
+                setTextColor(-3355444); textSize = 16f 
+            })
+            
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "Tempo: %d min", time)
+                setTextColor(-3355444); textSize = 16f 
+            })
         }
         view?.setOnTouchListener { _, _ -> hide(); true }
         try { wm?.addView(view, p) } catch (e: Exception) {}

@@ -45,7 +45,8 @@ class UberAccessibilityService : AccessibilityService() {
 
     private fun collectAllText(node: AccessibilityNodeInfo?, list: MutableList<String>) {
         if (node == null) return
-        node.text?.let { list.add(it.toString()) }
+        node.text?.let { if (it.isNotBlank()) list.add(it.toString()) }
+        node.contentDescription?.let { if (it.isNotBlank()) list.add(it.toString()) }
         for (i in 0 until node.childCount) {
             collectAllText(node.getChild(i), list)
         }
