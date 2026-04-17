@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Uber Analisador</string>
+    <string name="app_title">🚗 Analisador de Corridas Uber</string>
+    <string name="app_subtitle">Analise corridas em tempo real</string>
+    <string name="notif_access">Acesso a Notificações</string>
+    <string name="overlay_access">Sobreposição de Tela</string>
+    <string name="listener_service">Serviço de Escuta</string>
+    <string name="enabled">✅ Ativado</string>
+    <string name="disabled">❌ Desativado</string>
+    <string name="running">🟢 Executando</string>
+    <string name="stopped">🔴 Parado</string>
+    <string name="btn_enable_notif">Ativar Acesso a Notificações</string>
+    <string name="btn_enable_overlay">Ativar Permissão de Sobreposição</string>
+    <string name="how_it_works">Como Funciona</string>
+    <string name="step_1">1️⃣ Ative as duas permissões acima</string>
+    <string name="step_2">2️⃣ Abra o app Uber Driver normalmente</string>
+    <string name="step_3">3️⃣ Quando chegar uma corrida, nós capturamos</string>
+    <string name="step_4">4️⃣ Preço, distância e tempo são extraídos</string>
+    <string name="step_5">5️⃣ Um overlay aparece com o score e som</string>
+    <string name="score_colors">Cores do Score:</string>
+    <string name="color_green">🟢 Verde (8-10) = Excelente, aceite!</string>
+    <string name="color_yellow">🟡 Amarelo (5-7) = Média, você decide</string>
+    <string name="color_red">🔴 Vermelho (0-4) = Ruim, melhor pular</string>
+    <string name="overlay_score">Nota: %s</string>
+    <string name="overlay_price">Preço</string>
+    <string name="overlay_distance">Distância</string>
+    <string name="overlay_time">Tempo</string>
+    <string name="overlay_price_km">R$/km</string>
+    <string name="overlay_dismiss">↕ Deslize para fechar</string>
+</resources>
