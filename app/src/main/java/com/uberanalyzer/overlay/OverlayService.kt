@@ -79,40 +79,47 @@ class OverlayService : Service() {
                 setTextColor(Color.WHITE); textSize = 18f; setTypeface(null, 1)
             })
             
-            // Main Info: R$ / KM in prominent area
-            val pkm = if (km > 0) pr/km else 0.0
+            // Payout Total (PRINCIPAL)
             addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "Ganho: R$ %.2f / KM", pkm)
-                setTextColor(Color.parseColor(r.colorHex))
-                textSize = 24f
-                setTypeface(null, 1)
-            })
-            
-            // Payout Total (VERY CLEAR AS REQUESTED)
-            addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "RECEBER: R$ %.2f", pr)
+                text = String.format(Locale.getDefault(), "VALOR: R$ %.2f", pr)
                 setTextColor(Color.WHITE)
-                textSize = 22f
-                setTypeface(null, 1)
-                setPadding(0, dp(4), 0, dp(4))
+                textSize = 26f
+                setTypeface(null, 1) // Bold
+                gravity = Gravity.CENTER
+                setPadding(0, dp(5), 0, dp(5))
             })
 
-            // Secondary Info: Total Stats
+            // Gain per KM
+            val pkm = if (km > 0) pr/km else 0.0
             addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "Dirigir: %.1f KM | %d min", km, time)
-                setTextColor(Color.LTGRAY); textSize = 15f 
+                text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm)
+                setTextColor(Color.parseColor(r.colorHex))
+                textSize = 28f
+                setTypeface(null, 1)
+                gravity = Gravity.CENTER
             })
             
-            // Traffic/Speed Label
+            // Stats Row
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "Total: %.1f km | %d min", km, time)
+                setTextColor(Color.LTGRAY)
+                textSize = 17f
+                gravity = Gravity.CENTER
+            })
+            
+            // Traffic/Status
             val speed = if (time > 0) (km / (time/60.0)) else 0.0
-            val statusText = when {
-                speed > 40 -> "Trânsito: Fluido 🟢"
-                speed < 18 -> "Trânsito: Lento 🔴"
-                else -> "Trânsito: Normal 🟡"
+            val statusEmoji = when {
+                speed > 40 -> "🟢 Trânsito Bom"
+                speed < 18 -> "🔴 Trânsito Lento"
+                else -> "🟡 Trânsito Normal"
             }
             addView(TextView(context).apply { 
-                text = statusText
-                setTextColor(Color.LTGRAY); textSize = 14f 
+                text = statusEmoji
+                setTextColor(Color.WHITE)
+                textSize = 15f
+                gravity = Gravity.CENTER
+                setPadding(0, dp(5), 0, 0)
             })
         }
         view?.setOnTouchListener { _, _ -> hide(); true }
