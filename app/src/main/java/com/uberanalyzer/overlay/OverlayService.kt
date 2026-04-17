@@ -33,11 +33,11 @@ class OverlayService : Service() {
     }
     private var wm: WindowManager? = null
     private var view: LinearLayout? = null
-    override fun onbind(i: Intent?): IBinder? = null
+    override fun onBind(i: Intent?): IBinder? = null
     override fun onCreate() {
         super.onCreate()
         wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val ch = NotificationChannel("ovl_v2", "Overlay", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
             val n = NotificationCompat.Builder(this, "ovl_v2").setContentTitle("Uber Analyzer Ativo").setSmallIcon(android.R.drawable.ic_menu_compass).build()
@@ -56,7 +56,7 @@ class OverlayService : Service() {
     @SuppressLint("ClickableViewAccessibility")
     private fun show(i: Intent, r: ScoreRating) {
         hide()
-        val dp = { v: Int -> TypedValue.applyDimension(TypedValue.complex_unit_dip, v.toFloat(), resources.displayMetrics).toInt() }
+        val dp = { v: Int -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).toInt() }
         val p = WindowManager.LayoutParams(dp(300), -2, if (Build.VERSION.SDK_INT >= 26) 2038 else 2002, 8, -3).apply { gravity = Gravity.TOP; y = 150 }
         val pr = i.getDoubleExtra(EXTRA_PRICE, 0.0); val km = i.getDoubleExtra(EXTRA_DISTANCE, 0.1)
         view = LinearLayout(this).apply {
