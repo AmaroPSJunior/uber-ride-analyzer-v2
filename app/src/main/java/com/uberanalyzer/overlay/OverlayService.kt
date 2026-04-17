@@ -79,20 +79,40 @@ class OverlayService : Service() {
                 setTextColor(Color.WHITE); textSize = 18f; setTypeface(null, 1)
             })
             
+            // Main Info: R$ / KM in prominent area
             val pkm = if (km > 0) pr/km else 0.0
             addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm)
-                setTextColor(Color.parseColor(r.colorHex)); textSize = 28f; setTypeface(null, 1)
+                text = String.format(Locale.getDefault(), "Ganho: R$ %.2f / KM", pkm)
+                setTextColor(Color.parseColor(r.colorHex))
+                textSize = 24f
+                setTypeface(null, 1)
             })
             
+            // Payout Total (VERY CLEAR AS REQUESTED)
             addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "Total: R$ %.2f | %.1f KM", pr, km)
-                setTextColor(-3355444); textSize = 16f 
+                text = String.format(Locale.getDefault(), "RECEBER: R$ %.2f", pr)
+                setTextColor(Color.WHITE)
+                textSize = 22f
+                setTypeface(null, 1)
+                setPadding(0, dp(4), 0, dp(4))
+            })
+
+            // Secondary Info: Total Stats
+            addView(TextView(context).apply { 
+                text = String.format(Locale.getDefault(), "Dirigir: %.1f KM | %d min", km, time)
+                setTextColor(Color.LTGRAY); textSize = 15f 
             })
             
+            // Traffic/Speed Label
+            val speed = if (time > 0) (km / (time/60.0)) else 0.0
+            val statusText = when {
+                speed > 40 -> "Trânsito: Fluido 🟢"
+                speed < 18 -> "Trânsito: Lento 🔴"
+                else -> "Trânsito: Normal 🟡"
+            }
             addView(TextView(context).apply { 
-                text = String.format(Locale.getDefault(), "Tempo: %d min", time)
-                setTextColor(-3355444); textSize = 16f 
+                text = statusText
+                setTextColor(Color.LTGRAY); textSize = 14f 
             })
         }
         view?.setOnTouchListener { _, _ -> hide(); true }
