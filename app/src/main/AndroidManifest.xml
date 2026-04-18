@@ -30,6 +30,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="Configurações"
+            android:theme="@style/Theme.UberAnalyzer" />
+
         <service
             android:name=".service.UberNotificationService"
             android:exported="true"

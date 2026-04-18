@@ -6,7 +6,7 @@ import com.uberanalyzer.model.ScoreRating
 object RideAnalyzer {
     data class AnalysisResult(val score: Double, val rating: ScoreRating, val pricePerKm: Double)
 
-    fun analyze(ride: RideData): AnalysisResult {
+    fun analyze(ride: RideData, minKmValue: Double = 2.0, minHourValue: Double = 45.0): AnalysisResult {
         val pricePerKm = ride.price / ride.distanceKm
         val hours = ride.timeMin / 60.0
         val pricePerHour = if (hours > 0) ride.price / hours else 0.0
@@ -19,9 +19,9 @@ object RideAnalyzer {
             else -> 1.0        // Normal
         }
         
-        // Base score on R$/KM (target > 2.0) and R$/Hour (target > 45.0)
-        val kmScore = (pricePerKm / 2.0) * 5.0
-        val hourScore = (pricePerHour / 45.0) * 5.0
+        // Base score on dynamic targets
+        val kmScore = (pricePerKm / minKmValue) * 5.0
+        val hourScore = (pricePerHour / minHourValue) * 5.0
         
         var score = (kmScore + hourScore).coerceIn(0.0, 10.0)
         

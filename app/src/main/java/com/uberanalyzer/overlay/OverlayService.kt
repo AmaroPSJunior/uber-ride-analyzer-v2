@@ -56,9 +56,28 @@ class OverlayService : Service() {
     @SuppressLint("ClickableViewAccessibility")
     private fun show(i: Intent, r: ScoreRating) {
         hide()
+        val settings = com.uberanalyzer.settings.SettingsManager(this)
         val catName = i.getStringExtra(EXTRA_CATEGORY) ?: "Uber"
         val cat = com.uberanalyzer.model.RideCategory.fromString(catName)
         
+        // Dynamic colors from settings
+        val catColorKey = when(cat) {
+            com.uberanalyzer.model.RideCategory.UBER_X -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_UBER_X
+            com.uberanalyzer.model.RideCategory.COMFORT -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_COMFORT
+            com.uberanalyzer.model.RideCategory.BLACK -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_BLACK
+            com.uberanalyzer.model.RideCategory.FLASH -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_FLASH
+            else -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_UBER_X
+        }
+        val ratingColorKey = when(r) {
+            com.uberanalyzer.model.ScoreRating.EXCELLENT -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_EXCELLENT
+            com.uberanalyzer.model.ScoreRating.GOOD -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_GOOD
+            com.uberanalyzer.model.ScoreRating.AVERAGE -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_AVERAGE
+            com.uberanalyzer.model.ScoreRating.BAD -> com.uberanalyzer.settings.SettingsManager.KEY_COLOR_BAD
+        }
+        
+        val catColor = settings.getCategoryColor(catColorKey, cat.colorHex)
+        val ratingColor = settings.getRatingColor(ratingColorKey, r.colorHex)
+
         val dp = { v: Int -> TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, v.toFloat(), resources.displayMetrics).toInt() }
         val p = WindowManager.LayoutParams(dp(320), -2, if (Build.VERSION.SDK_INT >= 26) 2038 else 2002, 8, -3).apply { gravity = Gravity.TOP; y = 150 }
         
@@ -69,9 +88,9 @@ class OverlayService : Service() {
         view = LinearLayout(this).apply {
             orientation = 1; setPadding(dp(16), dp(16), dp(16), dp(16))
             background = GradientDrawable().apply { 
-                setColor(Color.parseColor(cat.colorHex))
+                setColor(Color.parseColor(catColor))
                 cornerRadius = dp(20).toFloat()
-                setStroke(dp(4), Color.parseColor(r.colorHex)) 
+                setStroke(dp(4), Color.parseColor(ratingColor)) 
             }
             
             addView(TextView(context).apply { 
@@ -93,7 +112,7 @@ class OverlayService : Service() {
             val pkm = if (km > 0) pr/km else 0.0
             addView(TextView(context).apply { 
                 text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm)
-                setTextColor(Color.parseColor(r.colorHex))
+                setTextColor(Color.parseColor(ratingColor))
                 textSize = 28f
                 setTypeface(null, 1)
                 gravity = Gravity.CENTER

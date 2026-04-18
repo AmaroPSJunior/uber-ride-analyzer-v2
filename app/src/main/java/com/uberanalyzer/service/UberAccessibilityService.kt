@@ -79,11 +79,15 @@ class UberAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (now - lastProcessedTime < 4000) return // Avoid spamming services
         
+        val settings = com.uberanalyzer.settings.SettingsManager(this)
+        val minKm = settings.getMinKmValue().toDouble()
+        val minHour = settings.getMinHourValue().toDouble()
+
         RideParser.parse(text)?.let { rideData ->
             lastProcessedTime = now
             sendDebugLog("SOLICITAÇÃO: R$ ${rideData.price} | ${rideData.distanceKm} KM")
             
-            val analysis = RideAnalyzer.analyze(rideData)
+            val analysis = RideAnalyzer.analyze(rideData, minKm, minHour)
             val intent = Intent(this, OverlayService::class.java).apply {
                 putExtra(OverlayService.EXTRA_PRICE, rideData.price)
                 putExtra(OverlayService.EXTRA_DISTANCE, rideData.distanceKm)

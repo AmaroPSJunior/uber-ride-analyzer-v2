@@ -108,6 +108,12 @@ class MainActivity : AppCompatActivity() {
         root.addView(overlayButton)
 
         root.addView(Button(this).apply {
+            text = "⚙️ Configurações de Ganhos"; setBackgroundColor(Color.parseColor("#3F51B5")); setTextColor(Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(10), 0, dp(10)) }
+            setOnClickListener { startActivity(Intent(this@MainActivity, SettingsActivity::class.java)) }
+        })
+
+        root.addView(Button(this).apply {
             text = "🚀 Testar Popup"; setBackgroundColor(Color.DKGRAY); setTextColor(Color.WHITE)
             setOnClickListener {
                 val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
