@@ -8,67 +8,63 @@ import android.view.accessibility.AccessibilityNodeInfo
 import com.uberanalyzer.analyzer.RideAnalyzer
 import com.uberanalyzer.overlay.OverlayService
 import com.uberanalyzer.parser.RideParser
+import java.util.concurrent.Executors
 
 class UberAccessibilityService : AccessibilityService() {
+    
+    private val executor = Executors.newSingleThreadExecutor()
+    private var isTaskPending = false
     
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         val pkg = event.packageName?.toString() ?: ""
         if (!pkg.contains("ubercab")) return
 
-        // Instant filter for relevant UI changes
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && 
             event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
-        // Heartbeat to UI every 5 seconds
-        if (System.currentTimeMillis() - lastLogTime > 5000) {
+        if (System.currentTimeMillis() - lastLogTime > 10000) {
             lastLogTime = System.currentTimeMillis()
-            sendDebugLog("Vigiando Uber... [Instant Mode]")
+            sendDebugLog("Vigiando Uber [Turbo Mode]...")
         }
 
+        // Quick return for the Accessibility Thread
+        if (isTaskPending) return
+        
+        isTaskPending = true
+        executor.execute {
+            try {
+                performTurboScan()
+            } finally {
+                isTaskPending = false
+            }
+        }
+    }
+
+    private fun performTurboScan() {
         val rootNode = rootInActiveWindow ?: return
-        val allText = mutableListOf<String>()
-        collectAllText(rootNode, allText)
-        val fullText = allText.joinToString(" | ")
+        try {
+            val sb = StringBuilder()
+            collectTextFast(rootNode, sb)
+            val fullText = sb.toString()
 
-        // Optimization: skip if nothing changed on screen
-        if (fullText == lastFullText) return
-        lastFullText = fullText
+            if (fullText == lastFullText) return
+            lastFullText = fullText
 
-        val lowerText = fullText.lowercase()
-        if (lowerText.contains("r$") && (lowerText.contains("aceitar") || lowerText.contains("selecionar") || lowerText.contains("confirmar"))) {
-            // Priority check for faster response
-            processRide(fullText)
+            val lowerText = fullText.lowercase()
+            if (lowerText.contains("r$") && (lowerText.contains("aceitar") || lowerText.contains("selecionar") || lowerText.contains("confirmar"))) {
+                processRideInstant(fullText)
+            }
+        } finally {
+            try { rootNode.recycle() } catch (e: Exception) {}
         }
     }
 
-    private fun findActionNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
-        if (node == null) return null
-        val text = (node.text ?: "").toString().lowercase()
-        val desc = (node.contentDescription ?: "").toString().lowercase()
-        
-        if (text.contains("aceitar") || text.contains("selecionar") || desc.contains("aceitar") || desc.contains("selecionar")) {
-            return node
-        }
-        
-        for (i in 0 until node.childCount) {
-            val result = findActionNode(node.getChild(i))
-            if (result != null) return result
-        }
-        return null
-    }
+    @Deprecated("Use collectTextFast for turbo performance")
+    private fun findActionNode(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? = null
 
-    private fun findCardParent(node: AccessibilityNodeInfo): AccessibilityNodeInfo {
-        var current = node
-        // Traverse up to find a container (usually the card is 5-7 levels up)
-        for (i in 0 until 7) {
-            current.parent?.let { current = it } ?: break
-        }
-        return current
-    }
-
-    private fun processRide(text: String) {
+    private fun processRideInstant(text: String) {
         val now = System.currentTimeMillis()
-        if (now - lastProcessedTime < 800) return // Instant: 0.8s cooldown
+        if (now - lastProcessedTime < 500) return // Instant Mode: 0.5s cooldown
         
         val settings = com.uberanalyzer.settings.SettingsManager(this)
         val minKm = settings.getMinKmValue().toDouble()
@@ -91,12 +87,17 @@ class UberAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun collectAllText(node: AccessibilityNodeInfo?, list: MutableList<String>) {
+    private fun collectTextFast(node: AccessibilityNodeInfo?, sb: StringBuilder) {
         if (node == null) return
-        node.text?.let { if (it.isNotBlank()) list.add(it.toString()) }
-        node.contentDescription?.let { if (it.isNotBlank()) list.add(it.toString()) }
+        node.text?.let { if (it.isNotBlank()) sb.append(it).append(" | ") }
+        node.contentDescription?.let { if (it.isNotBlank()) sb.append(it).append(" | ") }
+        
         for (i in 0 until node.childCount) {
-            collectAllText(node.getChild(i), list)
+            val child = node.getChild(i)
+            if (child != null) {
+                collectTextFast(child, sb)
+                try { child.recycle() } catch (e: Exception) {}
+            }
         }
     }
 
