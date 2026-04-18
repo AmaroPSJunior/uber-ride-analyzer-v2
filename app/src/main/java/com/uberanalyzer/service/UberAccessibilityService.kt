@@ -12,41 +12,32 @@ import com.uberanalyzer.parser.RideParser
 class UberAccessibilityService : AccessibilityService() {
     
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
-        // Heartbeat to UI every 3 seconds
-        if (System.currentTimeMillis() - lastLogTime > 3000) {
+        val pkg = event.packageName?.toString() ?: ""
+        if (!pkg.contains("ubercab")) return
+
+        // Instant filter for relevant UI changes
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && 
+            event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+
+        // Heartbeat to UI every 5 seconds
+        if (System.currentTimeMillis() - lastLogTime > 5000) {
             lastLogTime = System.currentTimeMillis()
-            sendDebugLog("Monitorando... [${AccessibilityEvent.eventTypeToString(event.eventType)}]")
+            sendDebugLog("Vigiando Uber... [Instant Mode]")
         }
 
-        // Use rootInActiveWindow to get the full screen
         val rootNode = rootInActiveWindow ?: return
-        
-        // Scan the entire screen text
         val allText = mutableListOf<String>()
         collectAllText(rootNode, allText)
         val fullText = allText.joinToString(" | ")
 
-        // Detection logic: Must have "R$" AND "Aceitar/Selecionar"
+        // Optimization: skip if nothing changed on screen
+        if (fullText == lastFullText) return
+        lastFullText = fullText
+
         val lowerText = fullText.lowercase()
-        val hasPrice = lowerText.contains("r$")
-        val hasAccept = lowerText.contains("aceitar") || lowerText.contains("selecionar") || lowerText.contains("confirmar")
-
-        if (hasPrice && hasAccept) {
-            // Find the specific card node for accurate parsing
-            val actionButton = findActionNode(rootNode)
-            val textToParse = if (actionButton != null) {
-                val cardNode = findCardParent(actionButton)
-                val cardStrings = mutableListOf<String>()
-                collectAllText(cardNode, cardStrings)
-                cardStrings.joinToString(" | ")
-            } else {
-                fullText
-            }
-
-            // Verify if the text looks like a valid ride again
-            if (textToParse.contains("R$") && (textToParse.lowercase().contains("km") || textToParse.lowercase().contains("distância"))) {
-                processRide(textToParse)
-            }
+        if (lowerText.contains("r$") && (lowerText.contains("aceitar") || lowerText.contains("selecionar") || lowerText.contains("confirmar"))) {
+            // Priority check for faster response
+            processRide(fullText)
         }
     }
 
@@ -77,7 +68,7 @@ class UberAccessibilityService : AccessibilityService() {
 
     private fun processRide(text: String) {
         val now = System.currentTimeMillis()
-        if (now - lastProcessedTime < 4000) return // Avoid spamming services
+        if (now - lastProcessedTime < 800) return // Instant: 0.8s cooldown
         
         val settings = com.uberanalyzer.settings.SettingsManager(this)
         val minKm = settings.getMinKmValue().toDouble()
@@ -85,10 +76,10 @@ class UberAccessibilityService : AccessibilityService() {
 
         RideParser.parse(text)?.let { rideData ->
             lastProcessedTime = now
-            sendDebugLog("SOLICITAÇÃO: R$ ${rideData.price} | ${rideData.distanceKm} KM")
+            sendDebugLog("RIDE: R$ ${rideData.price} | ${rideData.distanceKm}KM")
             
-            val analysis = RideAnalyzer.analyze(rideData, minKm, minHour)
             val intent = Intent(this, OverlayService::class.java).apply {
+                val analysis = RideAnalyzer.analyze(rideData, minKm, minHour)
                 putExtra(OverlayService.EXTRA_PRICE, rideData.price)
                 putExtra(OverlayService.EXTRA_DISTANCE, rideData.distanceKm)
                 putExtra(OverlayService.EXTRA_TIME, rideData.timeMin)
@@ -126,5 +117,6 @@ class UberAccessibilityService : AccessibilityService() {
     companion object {
         private var lastProcessedTime = 0L
         private var lastLogTime = 0L
+        private var lastFullText = ""
     }
 }
