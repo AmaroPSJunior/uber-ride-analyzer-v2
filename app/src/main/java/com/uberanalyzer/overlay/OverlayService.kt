@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
@@ -86,7 +87,7 @@ class OverlayService : Service() {
         val time = i.getIntExtra(EXTRA_TIME, 0)
         
         view = LinearLayout(this).apply {
-            orientation = 1; setPadding(dp(16), dp(16), dp(16), dp(16))
+            orientation = LinearLayout.VERTICAL; setPadding(dp(16), dp(16), dp(16), dp(16))
             background = GradientDrawable().apply { 
                 setColor(Color.parseColor(catColor))
                 cornerRadius = dp(20).toFloat()
@@ -95,7 +96,7 @@ class OverlayService : Service() {
             
             addView(TextView(context).apply { 
                 text = String.format(Locale.getDefault(), "Nota: %.1f | %s", i.getDoubleExtra(EXTRA_SCORE, 0.0), cat.displayName)
-                setTextColor(Color.WHITE); textSize = 18f; setTypeface(null, 1)
+                setTextColor(Color.WHITE); textSize = 18f; setTypeface(null, Typeface.BOLD)
             })
             
             // Payout Total (PRINCIPAL)
@@ -103,7 +104,7 @@ class OverlayService : Service() {
                 text = String.format(Locale.getDefault(), "VALOR: R$ %.2f", pr)
                 setTextColor(Color.WHITE)
                 textSize = 26f
-                setTypeface(null, 1) // Bold
+                setTypeface(null, Typeface.BOLD) // Bold
                 gravity = Gravity.CENTER
                 setPadding(0, dp(5), 0, dp(5))
             })
@@ -114,7 +115,7 @@ class OverlayService : Service() {
                 text = String.format(Locale.getDefault(), "R$ %.2f / KM", pkm)
                 setTextColor(Color.parseColor(ratingColor))
                 textSize = 28f
-                setTypeface(null, 1)
+                setTypeface(null, Typeface.BOLD)
                 gravity = Gravity.CENTER
             })
             
