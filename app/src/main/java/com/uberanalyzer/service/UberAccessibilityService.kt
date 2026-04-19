@@ -74,8 +74,12 @@ class UberAccessibilityService : AccessibilityService() {
             lastProcessedTime = now
             sendDebugLog("RIDE: R$ ${rideData.price} | ${rideData.distanceKm}KM")
             
+            val analysis = RideAnalyzer.analyze(rideData, minKm, minHour)
+            
+            // SAVE TO HISTORY DATABASE
+            com.uberanalyzer.db.RideHistoryManager(this).saveRide(rideData, analysis.score, analysis.rating.name)
+
             val intent = Intent(this, OverlayService::class.java).apply {
-                val analysis = RideAnalyzer.analyze(rideData, minKm, minHour)
                 putExtra(OverlayService.EXTRA_PRICE, rideData.price)
                 putExtra(OverlayService.EXTRA_DISTANCE, rideData.distanceKm)
                 putExtra(OverlayService.EXTRA_TIME, rideData.timeMin)

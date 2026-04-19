@@ -114,6 +114,12 @@ class MainActivity : AppCompatActivity() {
         })
 
         root.addView(Button(this).apply {
+            text = "📊 Histórico e Análises"; setBackgroundColor(Color.parseColor("#444444")); setTextColor(Color.WHITE)
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { setMargins(0, dp(10), 0, dp(10)) }
+            setOnClickListener { startActivity(Intent(this@MainActivity, HistoryActivity::class.java)) }
+        })
+
+        root.addView(Button(this).apply {
             text = "🚀 Testar Popup"; setBackgroundColor(Color.DKGRAY); setTextColor(Color.WHITE)
             setOnClickListener {
                 val intent = Intent(this@MainActivity, OverlayService::class.java).apply {
